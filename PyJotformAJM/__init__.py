@@ -1,1 +1,1 @@
-from PyJotformAJM import PyJotformAJM
+from PyJotformAJM.PyJotformAJM import JotForm
