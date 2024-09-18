@@ -22,6 +22,7 @@ class NoJotformClientError(Exception):
 
 class JotForm(APIKey):
     DEFAULT_FORM_ID = None
+    ILLEGAL_STARTING_CHARACTERS = ['<']
 
     def __init__(self, **kwargs):
         """
