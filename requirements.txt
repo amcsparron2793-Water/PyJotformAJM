@@ -1,3 +1,7 @@
 ApiKeyAJM==0.1
+build==1.2.2
+colorama==0.4.6
 jotform==1.2
+packaging==24.1
+pyproject_hooks==1.1.0
 setuptools==75.1.0
