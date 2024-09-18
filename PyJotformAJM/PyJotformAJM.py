@@ -2,7 +2,6 @@
 PyJotformAJM.py
 
 """
-
 from jotform import JotformAPIClient
 from ApiKeyAJM import APIKey
 
@@ -22,6 +21,7 @@ class NoJotformClientError(Exception):
 
 class JotForm(APIKey):
     DEFAULT_FORM_ID = None
+    ILLEGAL_STARTING_CHARACTERS = ['<']
 
     def __init__(self, **kwargs):
         """
@@ -239,7 +239,8 @@ class JotForm(APIKey):
             if field not in self.ignored_submission_fields:
                 try:
                     # these would be other internal/title fields that can be ignored
-                    if not submission_json[field]['text'].startswith('<'):
+                    if not any([submission_json[field]['text'].startswith(x)
+                                for x in self.ILLEGAL_STARTING_CHARACTERS]):
                         submission_answers['answers'].append({'field_name': submission_json[field]['text'],
                                                               'value': _strip_answer(submission_json[field]['answer'])})
                     else:
