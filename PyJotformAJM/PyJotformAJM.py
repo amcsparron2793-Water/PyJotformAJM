@@ -72,6 +72,8 @@ class JotForm(APIKey):
         self._new_entries_total = None
         self._last_submission_id = None
 
+        self.ignored_submission_fields = kwargs.get('ignored_submission_fields', [])
+
         self.form_id = kwargs.get('form_id', self.DEFAULT_FORM_ID)
 
         self._initialize_client()
@@ -218,3 +220,34 @@ class JotForm(APIKey):
         else:
             return None
         #print(dumps(new_submissions, indent=4))
+    
+    # noinspection PyTypeChecker
+    def get_answers_from_submission(self, submission_id: str):
+        def _strip_answer(answer):
+            if isinstance(answer, str):
+                answer = answer.strip()
+            elif isinstance(answer, dict) and 'datetime' in answer.keys():
+                answer = answer['datetime']
+            return answer
+
+        self.logger.info(f"parsing submission_id: {submission_id}")
+
+        submission_answers = {'submission_id': submission_id, 'answers': []}
+        submission_json = dict(self.client.get_submission(submission_id)['answers'].items())
+
+        for field in submission_json.keys():
+            if field not in self.ignored_submission_fields:
+                try:
+                    # these would be other internal/title fields that can be ignored
+                    if not submission_json[field]['text'].startswith('<'):
+                        submission_answers['answers'].append({'field_name': submission_json[field]['text'],
+                                                              'value': _strip_answer(submission_json[field]['answer'])})
+                    else:
+                        self.logger.debug(f'field {submission_json[field]['text']} (aka \'{field}\') '
+                                          f'ignored due to illegal starting character')
+
+                except KeyError:
+                    self.logger.debug(f'no value found for: {submission_json[field]['text']}')
+                    submission_answers['answers'].append({'field_name': submission_json[field]['text'],
+                                                          'value': None})
+        return submission_answers
