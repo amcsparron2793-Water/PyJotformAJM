@@ -1,18 +1,23 @@
 """
 PyJotformAJM.py
 
-*** Overall project description goes here ***
-
 """
 
-from _version import __version__
+from jotform import JotformAPIClient
+from ApiKeyAJM import APIKey
+
 from datetime import datetime
 from logging import getLogger
 from typing import Union
+from urllib.error import HTTPError
 
-from jotform import JotformAPIClient
-# TODO: finish v0.1 of ApiKeyAJM to use with this
-from APIKey.APIKey import APIKey
+
+class JotFormAuthenticationError(HTTPError):
+    ...
+
+
+class NoJotformClientError(Exception):
+    ...
 
 
 class JotForm(APIKey):
@@ -20,7 +25,9 @@ class JotForm(APIKey):
 
     def __init__(self, **kwargs):
         """
-        This code initializes an instance of a class and sets up various attributes and a logger. It also checks if a form ID is provided and raises an error if it is not found. Finally, it logs a message to indicate that the initialization is complete.
+        This code initializes an instance of a class and sets up various attributes and a logger.
+        It also checks if a form ID is provided and raises an error if it is not found.
+        Finally, it logs a message to indicate that the initialization is complete.
 
         Constructor:
             __init__(self, **kwargs)
@@ -59,21 +66,24 @@ class JotForm(APIKey):
             pass
         else:
             self.logger = kwargs.get('logger', getLogger('dummy_logger'))
+
+        self._has_valid_client = False
         self._has_new_entries = None
         self._new_entries_total = None
         self._last_submission_id = None
 
         self.form_id = kwargs.get('form_id', self.DEFAULT_FORM_ID)
-        if self.api_key:
-            self.client = JotformAPIClient(self.api_key)
-        else:
-            self.client = JotformAPIClient(self._get_api_key(self.api_key_location))
+
+        self._initialize_client()
 
         if not self.form_id and not self.DEFAULT_FORM_ID:
             raise AttributeError('form_id not found, if form_id was not a keyword arg, '
                                  'check that DEFAULT_FORM_ID is set in any subclasses.')
 
-        self.logger.info(f"{self.__class__.__name__} Initialization complete.")
+        if not self.has_valid_client:
+            raise NoJotformClientError('no valid JotForm client object found.')
+        else:
+            self.logger.info(f"{self.__class__.__name__} Initialization complete.")
 
     @property
     def has_new_entries(self):
@@ -130,6 +140,33 @@ class JotForm(APIKey):
         """
         self._last_submission_id = self._get_last_submission_id(self.client.get_form(self.form_id)['last_submission'])
         return self._last_submission_id
+
+    @property
+    def has_valid_client(self):
+        if hasattr(self, 'client'):
+            self._has_valid_client = True
+        else:
+            self._has_valid_client = False
+        return self._has_valid_client
+
+    @has_valid_client.setter
+    def has_valid_client(self, value):
+        self._has_valid_client = value
+
+    def _initialize_client(self):
+        if self.api_key:
+            self.client = JotformAPIClient(self.api_key)
+        else:
+            self.client = JotformAPIClient(self._fetch_api_key(self.api_key_location))
+        self._validate_client()
+
+    def _validate_client(self):
+        try:
+            self.client.get_user()
+            self.has_valid_client = True
+        except HTTPError as e:
+            raise JotFormAuthenticationError(
+                url=e.url, code=e.code, msg=e.reason, hdrs=e.headers, fp=e.fp) from None
 
     def _get_last_submission_id(self, last_sub_datetime: Union[datetime, str]):
         """

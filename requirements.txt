@@ -1,1 +1,2 @@
-jotform~=1.2
+ApiKeyAJM==0.1
+jotform==1.2
