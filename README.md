@@ -1,63 +1,104 @@
-from PyJotformAJM.PyJotformAJM import JotForm
-
 # PyJotformAJM
 
 ## Overview
-This project is a Python-based implementation to handle interactions with the JotForm API. It includes functions for client initialization, validation, and error handling to ensure smooth data operations. The package is designed to streamline the process of interfacing with JotForm for data submission and retrieval tasks.
+PyJotformAJM is a Python application designed to interface with JotForm's API, allowing users to manage and retrieve form submissions efficiently. It features classes for handling various authentication errors, client initialization, and form data processing.
 
 ## Features
-- **Client Initialization**: Ensures the JotForm client is properly initialized for API interactions.
-- **Validation**: Validates the client to check for a valid session or API token.
-- **Error Handling**: Custom exceptions for handling authentication errors and client issues.
-- **Submission Handling**: Properties and methods to manage and check for new entries and submission IDs.
+- **Error Handling:** Custom classes `JotFormAuthenticationError` and `NoJotformClientError` for managing authentication-related issues.
+- **JotForm Client Class:** The `JotForm` class manages form submissions, client validation, and other form-related operations.
+
+## Requirements
+- Python 3.12.2
+- pip (Python package installer)
 
 ## Installation
-Make sure you have [Python 3.12.2](https://www.python.org/downloads/release/python-3122/) installed. Then install required packages using pip.
-```bash
-pip install -r requirements.txt
-```
+
+1. Clone the repository:
+    ```bash
+    git clone https://github.com/amcsparron2793-Water/pyjotformajm.git
+    cd pyjotformajm
+    ```
+
+2. Create a virtual environment and activate it:
+    ```bash
+    python -m venv venv
+    .\venv\Scripts\activate  # On Windows
+    # source venv/bin/activate  # On macOS/Linux
+    ```
+
+3. Install the required packages:
+    ```bash
+    pip install -r requirements.txt
+    ```
 
 ## Usage
-Here is an example of how you can use the provided functionalities:
+To use the PyJotformAJM application, follow the steps below:
 
-### Initialization
+1. Initialize the `JotForm` class with your credentials and form ID.
+2. Use the various methods provided by the `JotForm` class to interact with your form data.
+
+### Example
 ```python
-# Ensure the client is properly initialized
-JotForm._initialize_client()
+from PyJotformAJM import JotForm
+
+# Initialize JotForm client
+jotform = JotForm(client_id='YOUR_CLIENT_ID', client_secret='YOUR_CLIENT_SECRET', form_id='YOUR_FORM_ID')
+
+# Check for new entries
+if jotform.has_new_entries():
+    new_entries = jotform.get_new_submissions()
+    print(new_entries)
 ```
 
-### Validation
-```python
-# Validate the client session 
-if has_valid_client:
-    print("Client is valid.")
-else:
-    print("Invalid client.")
-```
+## Classes and Methods
 
-### Check for New Entries
-```python
-# Check if there are new entries
-if has_new_entries:
-    print("There are new entries.")
-else:
-    print("No new entries at the moment.")
-```
+### JotForm
 
-### Retrieve Last Submission ID
-```python
-# Get the last submission ID
-last_id = last_submission_id
-print(f"Last submission ID: {last_id}")
-```
+- **Attributes:**
+  - `DEFAULT_FORM_ID`
+  - `ILLEGAL_STARTING_CHARACTERS`
+  - `IGNORED_FIELD_MESSAGE`
+  - `has_valid_client`
+  - `logger`
+  - `_last_submission_id`
+  - `_real_jf_field_names`
+  - `form_id`
+  - `client`
+  - `_new_entries_total`
+  - `_form_section_headers`
+  - `_has_new_entries`
+  - `ignored_submission_fields`
+  - `_has_valid_client`
 
-## Error Handling
-The project defines custom exceptions for handling different types of errors:
-- `NoJotformClientError`: Raised when the client is not properly initialized.
-- `JotFormAuthenticationError`: Inherits from `HTTPError` and is raised for authentication-related errors.
+- **Methods:**
+  - `__init__(self, client_id: str, client_secret: str, form_id: str)`
+  - `real_jf_field_names(self)`
+  - `form_section_headers(self)`
+  - `has_new_entries(self)`
+  - `new_entries_total(self)`
+  - `last_submission_id(self)`
+  - `has_valid_client(self)`
+  - `_initialize_client(self)`
+  - `_validate_client(self)`
+  - `_get_last_submission_id(self)`
+  - `get_new_submissions(self)`
+  - `_strip_answer(self, answer: dict)`
+  - `_get_answers_dict(self, answer: dict)`
+  - `get_answers_from_submission(self, submission: dict)`
+  - `is_illegal_field(self, field_name: str)`
 
 ## Contributing
-Contributions are welcome! Please fork the repository and submit a pull request with your changes. Ensure your code follows the project's coding standards and includes relevant tests.
+1. Fork the repository.
+2. Create a new branch: `git checkout -b my-feature-branch`
+3. Make your changes and commit them: `git commit -m 'Add some feature'`
+4. Push to the branch: `git push origin my-feature-branch`
+5. Submit a pull request.
 
 ## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
+
+
+
+---
+
+*Generated by AI Assistant*
