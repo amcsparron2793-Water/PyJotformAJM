@@ -219,8 +219,7 @@ class JotForm(APIKey):
             return new_submissions
         else:
             return None
-        #print(dumps(new_submissions, indent=4))
-    
+
     # noinspection PyTypeChecker
     def get_answers_from_submission(self, submission_id: str):
         def _strip_answer(answer):
@@ -242,7 +241,9 @@ class JotForm(APIKey):
                     if not any([submission_json[field]['text'].startswith(x)
                                 for x in self.ILLEGAL_STARTING_CHARACTERS]):
                         submission_answers['answers'].append({'field_name': submission_json[field]['text'],
-                                                              'value': _strip_answer(submission_json[field]['answer'])})
+                                                              'field_type': submission_json[field]['type'],
+                                                              'value': _strip_answer(
+                                                                  submission_json[field]['answer'])})
                     else:
                         self.logger.debug(f'field {submission_json[field]['text']} (aka \'{field}\') '
                                           f'ignored due to illegal starting character')
@@ -250,5 +251,6 @@ class JotForm(APIKey):
                 except KeyError:
                     self.logger.debug(f'no value found for: {submission_json[field]['text']}')
                     submission_answers['answers'].append({'field_name': submission_json[field]['text'],
+                                                          'field_type': submission_json[field]['type'],
                                                           'value': None})
         return submission_answers
