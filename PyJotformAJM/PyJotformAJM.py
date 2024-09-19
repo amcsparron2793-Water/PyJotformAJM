@@ -71,6 +71,8 @@ class JotForm(APIKey):
         self._has_new_entries = None
         self._new_entries_total = None
         self._last_submission_id = None
+        self._real_jf_field_names = None
+        self._form_section_headers = None
 
         self.ignored_submission_fields = kwargs.get('ignored_submission_fields', [])
 
@@ -88,9 +90,49 @@ class JotForm(APIKey):
             self.logger.info(f"{self.__class__.__name__} Initialization complete.")
 
     @property
+    def real_jf_field_names(self):
+        """
+        This code defines a property called `real_jf_field_names` in a class.
+
+        The property returns a list of field names extracted from the answers of a JotForm submission. The field
+        names are retrieved using the `get_answers_from_submission` method and stored in the `_real_jf_field_names`
+        variable before being returned.
+
+        If the `_real_jf_field_names` variable is not set, the code executes the `get_answers_from_submission` method
+        and retrieves the field names from the last submission ID in the `new_entries_total` attribute.
+
+        The property is accessed using dot notation on an instance of the class.
+
+        """
+        if not self._real_jf_field_names:
+            self._real_jf_field_names = [x['field_name'] for x in self.get_answers_from_submission(
+                self.new_entries_total['last_submission_id'])['answers']]
+        return self._real_jf_field_names
+
+    @property
+    def form_section_headers(self):
+        """
+        This code defines a property method named 'form_section_headers'.
+
+        When this property is accessed, it returns a list of field names from a submission's answers where the field
+        type is 'control_head'. This property uses a lazy loading technique - it only retrieves the field names when
+        the property is accessed for the first time and stores them in the '_form_section_headers' attribute for
+        future use. If the '_form_section_headers' attribute is already populated, it simply returns its value
+        without making additional database queries.
+
+        """
+        if not self._form_section_headers:
+            self._form_section_headers = [x['field_name'] for x in
+                                          self.get_answers_from_submission(
+                                              self.new_entries_total['last_submission_id'])['answers']
+                                          if x['field_type'] == 'control_head']
+        return self._form_section_headers
+
+    @property
     def has_new_entries(self):
         """
-        This code defines a property called `has_new_entries` for a class. The property is used to determine whether there are new entries in a form.
+        This code defines a property called `has_new_entries` for a class.
+        The property is used to determine whether there are new entries in a form.
 
         Attributes:
             - `client`: An object representing the client used to interact with forms.
@@ -101,7 +143,9 @@ class JotForm(APIKey):
             - `False` if there are no new entries in the form.
 
         Note:
-        This property assumes that the `client` object has a method called `get_form` that returns information about the form specified by `form_id`. The information should include a field called 'new' representing the count of new entries.
+        This property assumes that the `client` object has a method called `get_form` that returns information
+        about the form specified by `form_id`. The information should include a field called 'new'
+        representing the count of new entries.
 
         Usage:
         ```
