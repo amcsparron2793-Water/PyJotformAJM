@@ -7,7 +7,7 @@ from ApiKeyAJM import APIKey
 
 from datetime import datetime
 from logging import getLogger
-from typing import Union
+from typing import Union, Optional
 from urllib.error import HTTPError
 
 
@@ -22,45 +22,9 @@ class NoJotformClientError(Exception):
 class JotForm(APIKey):
     DEFAULT_FORM_ID = None
     ILLEGAL_STARTING_CHARACTERS = ['<']
+    IGNORED_FIELD_MESSAGE = "ignored due to illegal starting character"
 
     def __init__(self, **kwargs):
-        """
-        This code initializes an instance of a class and sets up various attributes and a logger.
-        It also checks if a form ID is provided and raises an error if it is not found.
-        Finally, it logs a message to indicate that the initialization is complete.
-
-        Constructor:
-            __init__(self, **kwargs)
-                Initializes an instance of the class with the provided keyword arguments.
-
-        Attributes:
-            _has_new_entries : bool or None
-                Stores whether there are new entries. Default value is None.
-            _new_entries_total : int or None
-                Stores the total number of new entries. Default value is None.
-            _last_submission_id : int or None
-                Stores the ID of the last submission. Default value is None.
-            form_id : str
-                Stores the ID of the form. It is set to the default value if not provided in the keyword arguments.
-            logger : Logger
-                Stores the logger object. If a logger object is provided in the keyword arguments, it is used. Otherwise, a 'dummy_logger' is created.
-            client : JotformAPIClient
-                Stores the Jotform API client object. If an API key is provided, it is used to create the client. Otherwise, the API key is retrieved from the specified location and used to create the client.
-
-        Raises:
-            AttributeError
-                If form_id is not found and neither form_id nor DEFAULT_FORM_ID is set.
-
-        Example usage:
-            # Create an instance of MyClass with a custom logger
-            logger = getLogger('my_logger')
-            my_obj = MyClass(logger=logger)
-
-            # Create an instance of MyClass with a custom form ID and API key
-            my_obj = MyClass(form_id='my_form_id', api_key='my_api_key')
-
-        This code should be used as a template for creating new instances of the class. It provides a basic structure for initialization and sets up important attributes and dependencies.
-        """
         super().__init__(**kwargs)
         if hasattr(self, 'logger'):
             pass
@@ -264,15 +228,20 @@ class JotForm(APIKey):
         else:
             return None
 
+    @staticmethod
+    def _strip_answer(answer: Optional[Union[str, dict]]):
+        if isinstance(answer, str):
+            answer = answer.strip()
+        elif isinstance(answer, dict) and 'datetime' in answer.keys():
+            answer = answer['datetime']
+        return answer
+
+    def _get_answers_dict(self, raw_answers: dict):
+        self.logger.warning("THIS IS MEANT TO BE OVERWRITTEN IN A SUBCLASS!")
+        return raw_answers
+
     # noinspection PyTypeChecker
     def get_answers_from_submission(self, submission_id: str):
-        def _strip_answer(answer):
-            if isinstance(answer, str):
-                answer = answer.strip()
-            elif isinstance(answer, dict) and 'datetime' in answer.keys():
-                answer = answer['datetime']
-            return answer
-
         self.logger.info(f"parsing submission_id: {submission_id}")
 
         submission_answers = {'submission_id': submission_id, 'answers': []}
@@ -280,21 +249,19 @@ class JotForm(APIKey):
 
         for field in submission_json.keys():
             if field not in self.ignored_submission_fields:
+                field_text = submission_json[field]['text']
                 try:
                     # these would be other internal/title fields that can be ignored
-                    if not any([submission_json[field]['text'].startswith(x)
-                                for x in self.ILLEGAL_STARTING_CHARACTERS]):
-                        submission_answers['answers'].append({'field_name': submission_json[field]['text'],
-                                                              'field_type': submission_json[field]['type'],
-                                                              'value': _strip_answer(
-                                                                  submission_json[field]['answer'])})
+                    if not self.is_illegal_field(field_text):
+                        submission_answers['answers'].append(self._get_answers_dict(submission_json[field]))
                     else:
-                        self.logger.debug(f'field {submission_json[field]['text']} (aka \'{field}\') '
-                                          f'ignored due to illegal starting character')
+                        self.logger.debug(f'field {field_text} (aka \'{field}\') {self.IGNORED_FIELD_MESSAGE}')
 
                 except KeyError:
-                    self.logger.debug(f'no value found for: {submission_json[field]['text']}')
-                    submission_answers['answers'].append({'field_name': submission_json[field]['text'],
-                                                          'field_type': submission_json[field]['type'],
-                                                          'value': None})
+                    self.logger.debug(f'no value found for: {field_text}')
+                    submission_answers['answers'].append(self._get_answers_dict(submission_json[field]))
+
         return submission_answers
+
+    def is_illegal_field(self, field_text: str) -> bool:
+        return any([field_text.startswith(char) for char in self.ILLEGAL_STARTING_CHARACTERS])
