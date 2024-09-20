@@ -127,7 +127,7 @@ class JotForm(APIKey):
         """
         if not self._real_jf_field_names:
             self._real_jf_field_names = [x['field_name'] for x in self.get_answers_from_submission(
-                self.new_entries_total['last_submission_id'])['answers']]
+                self.last_submission_id)['answers']]
         return self._real_jf_field_names
 
     @property
@@ -145,7 +145,7 @@ class JotForm(APIKey):
         if not self._form_section_headers:
             self._form_section_headers = [x['field_name'] for x in
                                           self.get_answers_from_submission(
-                                              self.new_entries_total['last_submission_id'])['answers']
+                                              self.last_submission_id)['answers']
                                           if x['field_type'] == 'control_head']
         return self._form_section_headers
 
