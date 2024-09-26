@@ -2,21 +2,25 @@
 PyJotformAJM.py
 
 """
+from json import dump, JSONDecodeError
+from pathlib import Path
+
 from jotform import JotformAPIClient
 from ApiKeyAJM import APIKey
 
 from datetime import datetime
 from logging import getLogger
 from typing import Union, Optional
-from urllib.error import HTTPError
 
 
-class JotFormAuthenticationError(HTTPError):
-    ...
-
-
-class NoJotformClientError(Exception):
-    ...
+try:
+    from .err import *
+    from .SectionsFieldDict import SectionFieldsDict
+    from .Submission import Submission
+except ImportError:
+    from err import *
+    from SectionsFieldDict import SectionFieldsDict
+    from Submission import Submission
 
 
 class JotForm(APIKey):
@@ -80,6 +84,9 @@ class JotForm(APIKey):
     DEFAULT_FORM_ID = None
     ILLEGAL_STARTING_CHARACTERS = ['<']
     IGNORED_FIELD_MESSAGE = "ignored due to illegal starting character"
+    # noinspection SpellCheckingInspection
+    DATE_TODAY = datetime.now().date().strftime('%m%d%y')
+    RAW_NEWEST_SUBMISSIONS_PATH = f'../Misc_Project_Files/newest_submissions_{DATE_TODAY}.json'
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -87,6 +94,11 @@ class JotForm(APIKey):
             pass
         else:
             self.logger = kwargs.get('logger', getLogger('dummy_logger'))
+
+        self._section_fields_dict = None
+        self._valid_submission_ids = None
+        self._submission = None
+        self._organized_submission_answers = None
 
         self._has_valid_client = False
         self._has_new_entries = None
@@ -126,9 +138,41 @@ class JotForm(APIKey):
 
         """
         if not self._real_jf_field_names:
-            self._real_jf_field_names = [x['field_name'] for x in self.get_answers_from_submission(
-                self.last_submission_id)['answers']]
+            self._real_jf_field_names = [{'field_name': x['field_name'], 'uni_field_name': x['uni_field_name']}
+                                         for x in self.get_answers_from_submission(self.last_submission_id)['answers']]
         return self._real_jf_field_names
+
+    @property
+    def submission(self):
+        """
+        Returns the submission object for the current instance.
+
+        If the `_submission` attribute has not been set, it creates a new `Submission` object with the last submission ID
+            and assigns it to the attribute. It then returns the `_submission` attribute.
+
+        Returns:
+            Submission: The submission object for the current instance.
+        """
+        if not self._submission:
+            self._submission = Submission(self, self.last_submission_id)
+        return self._submission
+
+    @submission.setter
+    def submission(self, sub_id: str):
+        self._submission = Submission(self, sub_id)
+
+    @property
+    def section_fields_dict(self):
+        """
+        Getter method for the section_fields_dict property.
+
+        Returns:
+            The section_fields_dict property value. If it is not yet initialized, it initializes it using the SectionFieldsDict class.
+
+        """
+        if not self._section_fields_dict:
+            self._section_fields_dict = SectionFieldsDict(self).section_fields_dict
+        return self._section_fields_dict
 
     @property
     def form_section_headers(self):
@@ -293,8 +337,20 @@ class JotForm(APIKey):
             answer = answer['datetime']
         return answer
 
-    def _get_answers_dict(self, raw_answers: dict):
-        self.logger.warning("THIS IS MEANT TO BE OVERWRITTEN IN A SUBCLASS!")
+    def _get_answers_dict(self, raw_answers: dict) -> dict:
+        """f_name = raw_answers['text']
+        f_value = self._strip_answer(raw_answers.get('answer', None))
+
+        if raw_answers['text'] == '' or not raw_answers['text']:
+            f_name = raw_answers['name']
+
+        ans_entry = {'field_name': f_name,
+                     'uni_field_name': raw_answers['name'],
+                     'field_type': raw_answers['type'],
+                     'field_order': int(raw_answers['order']),
+                     'value': f_value}
+        return ans_entry"""
+        self.logger.warning("_get_answers_dict IS MEANT TO BE OVERWRITTEN IN A SUBCLASS!")
         return raw_answers
 
     # noinspection PyTypeChecker
@@ -322,3 +378,19 @@ class JotForm(APIKey):
 
     def is_illegal_field(self, field_text: str) -> bool:
         return any([field_text.startswith(char) for char in self.ILLEGAL_STARTING_CHARACTERS])
+
+    def _write_raw_newest_submissions(self, **kwargs):
+        save_location = Path(kwargs.get('save_location', self.RAW_NEWEST_SUBMISSIONS_PATH))
+        if save_location.suffix != '.json':
+            try:
+                raise AttributeError("save_location must be a json file")
+            except AttributeError as e:
+                self.logger.error(e, exc_info=True)
+                raise e
+        try:
+            with open(save_location, 'w') as f:
+                dump(self.get_new_submissions(), f, indent=4)
+            self.logger.info(f"raw newest_submissions information written to file {save_location}")
+        except (JSONDecodeError, IOError) as e:
+            self.logger.error(e, exc_info=True)
+            raise e
