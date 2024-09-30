@@ -82,23 +82,32 @@ class SectionFieldsDict:
         A static method that returns the index of a given field in a list of answers.
 
         Parameters:
-        - field: A dictionary representing a field.
-        - answers: A list of dictionaries representing answers.
+        - field: A dictionary representing a field. Must contain 'field_name' and 'uni_field_name'.
+        - answers: A list of dictionaries representing answers. Each dictionary must contain 'field_name', 'uni_field_name', and 'field_order'.
 
         Returns:
         An integer representing the index of the field in the answers list, or None if the field is not found.
 
         Example:
         field = {'field_name': 'name', 'uni_field_name': 'Name'}
-        answers = [{'field_name': 'name', 'uni_field_name': 'Name', 'field_order': 1}, {'field_name': 'occupation',
-                    'uni_field_name': 'Occupation', 'field_order': 2}]
+        answers = [{'field_name': 'name', 'uni_field_name': 'Name', 'field_order': 0},
+                   {'field_name': 'occupation', 'uni_field_name': 'Occupation', 'field_order': 1}]
         index = get_field_index(field, answers)
-        # index = 1
+        # index = 0
         """
-        # FIXME: check for correct keys
+        required_keys = {'field_name', 'uni_field_name'}
+        if not required_keys.issubset(field):
+            raise ValueError(f"The field dictionary is missing one of the required keys: {required_keys}")
+
         for answer in answers:
+            if not required_keys.issubset(answer) or 'field_order' not in answer:
+                raise ValueError(
+                    "Each answer dictionary must contain 'field_name', 'uni_field_name', and 'field_order' keys.")
+
             if answer['field_name'] == field['field_name'] and answer['uni_field_name'] == field['uni_field_name']:
-                return answer['field_order']
+                return answer.get('field_order', None)
+
+        return None
 
     def _get_all_field_indexes(self):
         """
@@ -209,7 +218,7 @@ class SectionFieldsDict:
         # special sections have concrete start and end points
         if section_name in self.SPECIAL_SECTIONS:
             section_start, section_end = self.SPECIAL_SECTIONS[section_name]
-
+        # TODO: add to JotFormForCatalog?
         # this case is probably the end of the form
         if section_end is None:
             section_end = self.all_field_indexes[-1]['field_index']

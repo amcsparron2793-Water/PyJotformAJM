@@ -5,3 +5,6 @@ jotform==1.2
 packaging==24.1
 pyproject_hooks==1.1.0
 setuptools==75.1.0
+
+PyJotformAJM~=0.1
+requests~=2.32.3

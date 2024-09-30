@@ -1,9 +1,15 @@
 from datetime import datetime
-
+from sys import modules
 try:
     from .err import *
+    from .LinkRequester import LinkRequester
 except ImportError:
     from err import *
+    try:
+        # noinspection PyUnresolvedReferences
+        from LinkRequester import LinkRequester
+    except ImportError:
+        print("LinkRequester could not be imported!")
 
 
 class Submission:
@@ -49,11 +55,15 @@ class Submission:
     """
 
     # TODO: TESTS!!!!!
-    def __init__(self, jf, submission_id):
+    def __init__(self, jf, submission_id, get_links=False):
         self.jf = jf
         self.logger = jf.logger
         self.form_id = jf.form_id
         self.client = jf.client
+
+        self.get_links = get_links
+        self._initialize_get_links()
+
         self.last_submission_id = jf.last_submission_id
         self._valid_submission_ids = None
         self._previous_submission_id = None
@@ -63,6 +73,11 @@ class Submission:
         self._active_submission_all_answers = None
         self._active_submission_non_null_answers = None
         self._organized_submission_answers = {}
+
+    def _initialize_get_links(self):
+        if self.get_links and 'LinkRequester' not in modules.keys():
+            self.logger.warning("LinkRequester could not be imported, setting self.get_links to False!")
+            self.get_links = False
 
     @classmethod
     def GetSubmissionAllAnswers(cls, submission_id, jf):
@@ -246,13 +261,15 @@ class Submission:
                             x['submitted_answer'] = y[1].get("1", y[1].get("2"))
                         elif isinstance(y[1], str) and y[1].startswith('http'):
                             x['submitted_answer'] = y[1]
-                            # TODO: add LinkRequester
-                            # try:
-                            #     LinkRequester.GetWriteFile(url_str=y[1], api_key=self.jf.api_key,
-                            #                                logger=self.logger)
-                            # except SignatureFileError as e:
-                            #     self.logger.warning(f"Could not download signature file(s) due to {e}")
-                            #     continue
+
+                            if self.get_links:
+                                try:
+                                    LinkRequester.GetWriteFile(url_str=y[1], api_key=self.jf.api_key,
+                                                               logger=self.logger)
+                                except SignatureFileError as e:
+                                    self.logger.warning(f"Could not download signature file(s) due to {e}")
+                                    continue
+
                         else:
                             x['submitted_answer'] = y[1]
             # add the active_submission_id on as a key to the new list_dict
