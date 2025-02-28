@@ -87,6 +87,8 @@ class JotForm(APIKey):
     # noinspection SpellCheckingInspection
     DATE_TODAY = datetime.now().date().strftime('%m%d%y')
     RAW_NEWEST_SUBMISSIONS_PATH = f'../Misc_Project_Files/newest_submissions_{DATE_TODAY}.json'
+    FORM_ID_ERR_MSG = ("form_id not found, if form_id was not a keyword arg, "
+                       "check that DEFAULT_FORM_ID is set in any subclasses.")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -114,8 +116,7 @@ class JotForm(APIKey):
         self._initialize_client()
 
         if not self.form_id and not self.DEFAULT_FORM_ID:
-            raise AttributeError('form_id not found, if form_id was not a keyword arg, '
-                                 'check that DEFAULT_FORM_ID is set in any subclasses.')
+            raise AttributeError(self.FORM_ID_ERR_MSG)
 
         if not self.has_valid_client:
             raise NoJotformClientError('no valid JotForm client object found.')
