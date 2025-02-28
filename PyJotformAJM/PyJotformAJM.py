@@ -24,12 +24,28 @@ except ImportError:
 
 
 class _JotFormClient(APIKey):
+    """
+    JotFormClient is a class that extends APIKey and provides methods for initializing a client,
+    validating the client, and handling authentication errors.
+    The initializer sets up the client attribute and invokes the _initialize_client method.
+    The _initialize_client method creates a JotformAPIClient instance based on the provided API key.
+     If no key is provided, it attempts to fetch the key from the specified location.
+     The _validate_client method checks the client by making a request to get_user
+     and raises a JotFormAuthenticationError if an HTTPError occurs during the request.
+    """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.client = None
         self._initialize_client()
 
     def _initialize_client(self):
+        """
+        Initializes the client object by creating an instance of the
+        JotformAPIClient class using the provided API key.
+        If no API key is provided, it fetches the API key from the
+        specified location before creating the client object.
+        This method then validates the client to ensure it is ready for making API requests.
+        """
         if self.api_key:
             self.client = JotformAPIClient(self.api_key)
         else:
@@ -37,6 +53,11 @@ class _JotFormClient(APIKey):
         self._validate_client()
 
     def _validate_client(self):
+        """
+        Validates the client by attempting to get a user.
+        If an HTTPError occurs during the process,
+        it raises a JotFormAuthenticationError with details from the error.
+        """
         try:
             self.client.get_user()
         except HTTPError as e:
@@ -46,61 +67,29 @@ class _JotFormClient(APIKey):
 
 class JotForm(_JotFormClient):
     """
-    This module defines a class `JotForm` that inherits from `APIKey`.
-
-    The `JotForm` class represents an object that interacts with the JotForm API to retrieve and manipulate form data.
+    This code defines a class `JotForm` that extends `_JotFormClient` class functionality
+    and implements various properties and methods for interacting with JotForm submissions.
 
     Attributes:
-    - `DEFAULT_FORM_ID`: A class attribute that represents the default form ID. It is set to `None` by default.
-    - `ILLEGAL_STARTING_CHARACTERS`: A class attribute that represents the list of illegal starting characters for field
-        names. It is set to `['<']` by default.
-    - `IGNORED_FIELD_MESSAGE`: A class attribute that represents the error message displayed when a field is ignored
-        due to an illegal starting character. It is set to `"ignored due to illegal starting character"` by default.
+    - `DEFAULT_FORM_ID`: Default form ID value set to `None`.
+    - `ILLEGAL_STARTING_CHARACTERS`: List of illegal starting characters.
+    - `IGNORED_FIELD_MESSAGE`: Message for ignored fields.
+    - `DATE_TODAY`: Current date formatted as '%m%d%y'.
+    - `RAW_NEWEST_SUBMISSIONS_PATH`: Path for storing newest submissions JSON file.
+    - `FORM_ID_ERR_MSG`: Error message for missing form ID.
 
     Methods:
-    - `__init__(self, **kwargs)`: Initializes an instance of `JotForm` with the given keyword arguments.
-    - `_initialize_client(self)`: Initializes the JotForm client object.
-    - `_validate_client(self)`: Validates the JotForm client object.
-    - `_get_last_submission_id(self, last_sub_datetime: Union[datetime, str])`: Retrieves the last submission ID based
-                                                                            on the provided last submission datetime.
-    - `get_new_submissions(self)`: Returns the new submissions for a given form.
-    - `_strip_answer(answer: Optional[Union[str, dict]])`: Strips leading and trailing whitespace from an answer.
-
-    Properties:
-    - `real_jf_field_names(self)`: Gets a list of field names extracted from the answers of a JotForm submission.
-    - `form_section_headers(self)`: Gets a list of field names from a submission's answers where the field type is 'control_head'.
-    - `has_new_entries(self)`: Determines whether there are new entries in a form.
-    - `new_entries_total(self)`: Gets the total number of new entries in a form.
-    - `last_submission_id(self)`: Retrieves the last submission ID for the specified form.
-    - `has_valid_client(self)`: Checks if the JotForm client object is valid.
-
-    Note:
-    - This module requires the `APIKey` class to be defined.
-    - The JotForm API requires a valid API key to make requests.
-    - The `JotForm` class assumes that the `client` object has a method called `get_form` that returns information
-        about the form specified by `form_id`.
-    - The `JotForm` class relies on the `JotformAPIClient` class to interact with the JotForm API.
-
-    Example usage:
-    ```
-    # Create an instance of the JotForm class
-    jotform = JotForm(api_key='your_api_key', form_id='your_form_id')
-
-    # Check if there are new entries in the form
-    has_new_entries = jotform.has_new_entries
-
-    # Get the total number of new entries in the form
-    new_entries_total = jotform.new_entries_total
-
-    # Get the last submission ID for the form
-    last_submission_id = jotform.last_submission_id
-
-    # Retrieve the new submissions for the form
-    new_submissions = jotform.get_new_submissions()
-
-    # Strip leading and trailing whitespace from an answer
-    stripped_answer = jotform._strip_answer(answer)
-    ```
+    - `__init__`: Class constructor to initialize instance attributes and validate form ID.
+    - `real_jf_field_names`: Property to get real JotForm field names from submissions.
+    - `submission`: Property to get submission object for the current instance.
+    - `section_fields_dict`: Getter method for the `section_fields_dict` property.
+    - `form_section_headers`: Property to retrieve section field headers from submissions.
+    - `has_new_entries`: Property to check for new entries in the form.
+    - `new_entries_total`: Property to get total count of new entries in the form.
+    - `last_submission_id`: Property to retrieve the last submission ID for the specified form.
+    - `has_valid_client`: Property to check for the validity of the JotForm client.
+    - `_get_last_submission_id`: Internal method to get the last submission ID based on the provided datetime.
+    - `get_new_submissions`: Method to return new submissions for a given form.
     """
     DEFAULT_FORM_ID = None
     ILLEGAL_STARTING_CHARACTERS = ['<']
@@ -279,10 +268,6 @@ class JotForm(_JotFormClient):
         else:
             self._has_valid_client = False
         return self._has_valid_client
-
-    @has_valid_client.setter
-    def has_valid_client(self, value):
-        self._has_valid_client = value
 
     def _get_last_submission_id(self, last_sub_datetime: Union[datetime, str]):
         """
