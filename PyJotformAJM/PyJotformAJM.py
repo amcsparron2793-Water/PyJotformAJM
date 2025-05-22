@@ -120,10 +120,10 @@ class JotForm(_JotFormClient):
 
         self.ignored_submission_fields = kwargs.get('ignored_submission_fields', [])
 
-        self.form_id = kwargs.get('form_id', self.DEFAULT_FORM_ID)
+        self.form_id = kwargs.get('form_id', JotForm.DEFAULT_FORM_ID)
 
-        if not self.form_id and not self.DEFAULT_FORM_ID:
-            raise AttributeError(self.FORM_ID_ERR_MSG)
+        if not self.form_id and not JotForm.DEFAULT_FORM_ID:
+            raise AttributeError(JotForm.FORM_ID_ERR_MSG)
 
         super().__init__(**kwargs)
 
@@ -371,7 +371,7 @@ class JotForm(_JotFormClient):
                     if not self.is_illegal_field(field_text):
                         submission_answers['answers'].append(self._get_answers_dict(submission_json[field]))
                     else:
-                        self.logger.debug(f'field {field_text} (aka \'{field}\') {self.IGNORED_FIELD_MESSAGE}')
+                        self.logger.debug(f'field {field_text} (aka \'{field}\') {JotForm.IGNORED_FIELD_MESSAGE}')
 
                 except KeyError:
                     self.logger.debug(f'no value found for: {field_text}')
@@ -379,7 +379,8 @@ class JotForm(_JotFormClient):
 
         return submission_answers
 
-    def is_illegal_field(self, field_text: str) -> bool:
+    @staticmethod
+    def is_illegal_field(field_text: str) -> bool:
         """
         Check if the given field text starts with any illegal starting characters
         defined in the class attribute ILLEGAL_STARTING_CHARACTERS.
@@ -387,10 +388,10 @@ class JotForm(_JotFormClient):
         :param field_text: A string representing the field text to be checked.
         :return: A boolean value indicating if the field text starts with any illegal starting characters.
         """
-        return any([field_text.startswith(char) for char in self.ILLEGAL_STARTING_CHARACTERS])
+        return any([field_text.startswith(char) for char in JotForm.ILLEGAL_STARTING_CHARACTERS])
 
     def _write_raw_newest_submissions(self, **kwargs):
-        save_location = Path(kwargs.get('save_location', self.RAW_NEWEST_SUBMISSIONS_PATH))
+        save_location = Path(kwargs.get('save_location', JotForm.RAW_NEWEST_SUBMISSIONS_PATH))
         if save_location.suffix != '.json':
             try:
                 raise AttributeError("save_location must be a json file")
