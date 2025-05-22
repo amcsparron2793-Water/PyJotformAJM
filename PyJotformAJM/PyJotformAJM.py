@@ -263,6 +263,12 @@ class JotForm(_JotFormClient):
 
     @property
     def has_valid_client(self):
+        """
+        @property
+        has_valid_client(self)
+
+        Checks if the object has a valid client attribute and returns a boolean value indicating the validation result.
+        """
         if hasattr(self, 'client'):
             self._has_valid_client = True
         else:
@@ -344,6 +350,14 @@ class JotForm(_JotFormClient):
 
     # noinspection PyTypeChecker
     def get_answers_from_submission(self, submission_id: str):
+        """
+        Retrieves answers from a submission identified by a given submission ID.
+        It parses the submission ID and retrieves the answers associated with it.
+        The method iterates through the fields in the submission and constructs a
+         dictionary of answers excluding the ignored submission fields.
+         It logs warnings for illegal fields and missing values,
+          then returns a dictionary containing the submission ID and answers obtained.
+        """
         self.logger.info(f"parsing submission_id: {submission_id}")
 
         submission_answers = {'submission_id': submission_id, 'answers': []}
@@ -366,6 +380,13 @@ class JotForm(_JotFormClient):
         return submission_answers
 
     def is_illegal_field(self, field_text: str) -> bool:
+        """
+        Check if the given field text starts with any illegal starting characters
+        defined in the class attribute ILLEGAL_STARTING_CHARACTERS.
+
+        :param field_text: A string representing the field text to be checked.
+        :return: A boolean value indicating if the field text starts with any illegal starting characters.
+        """
         return any([field_text.startswith(char) for char in self.ILLEGAL_STARTING_CHARACTERS])
 
     def _write_raw_newest_submissions(self, **kwargs):
