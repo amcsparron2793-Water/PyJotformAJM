@@ -216,8 +216,8 @@ class SectionFieldsDict:
         section_end = self.get_next_section_index_start(section_name).get('section_index', None)
 
         # special sections have concrete start and end points
-        if section_name in self.SPECIAL_SECTIONS:
-            section_start, section_end = self.SPECIAL_SECTIONS[section_name]
+        if section_name in self.__class__.SPECIAL_SECTIONS:
+            section_start, section_end = self.__class__.SPECIAL_SECTIONS[section_name]
         # TODO: add to JotFormForCatalog?
         # this case is probably the end of the form
         if section_end is None:
