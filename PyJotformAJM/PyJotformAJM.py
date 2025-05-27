@@ -120,15 +120,17 @@ class JotForm(_JotFormClient):
         self.ignored_submission_fields = kwargs.get('ignored_submission_fields', [])
 
         self.form_id = kwargs.get('form_id', JotForm.DEFAULT_FORM_ID)
-
-        if not self.form_id and not JotForm.DEFAULT_FORM_ID:
-            raise AttributeError(JotForm.FORM_ID_ERR_MSG)
+        self._validate_form_id()
 
         super().__init__(**kwargs)
 
         if not self.has_valid_client:
             raise NoJotformClientError('no valid JotForm client object found.')
         self.logger.info(f"{self.__class__.__name__} Initialization complete.")
+
+    def _validate_form_id(self):
+        if not self.form_id and not JotForm.DEFAULT_FORM_ID:
+            raise AttributeError(JotForm.FORM_ID_ERR_MSG)
 
     @property
     def real_jf_field_names(self):
