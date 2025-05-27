@@ -10,8 +10,7 @@ from logging import getLogger
 from typing import Union, Optional
 
 from jotform import JotformAPIClient
-from ApiKeyAJM import APIKey
-
+from ApiKeyAJM.ApiKeyAJM import APIKeyFromFile
 
 try:
     from .err import *
@@ -23,7 +22,7 @@ except ImportError:
     from Submission import Submission
 
 
-class _JotFormClient(APIKey):
+class _JotFormClient(APIKeyFromFile):
     """
     JotFormClient is a class that extends APIKey and provides methods for initializing a client,
     validating the client, and handling authentication errors.
